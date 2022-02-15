@@ -41,7 +41,8 @@ const authUtil = {
     // 패스워드 확인
     async passCompare(inputPassWord , dbPassWord ){
         try {
-            return await bcrypt.compare(inputPassWord, dbPassWord);
+            const val = await bcrypt.compare(dbPassWord, inputPassWord);
+            return val
         } catch (error) {
             logger.error(error);
             throw new Error('사용자확인 문제');

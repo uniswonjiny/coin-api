@@ -16,10 +16,15 @@ exports.loginInfo = async (req, res, next) =>{
         const {user_id , user_password} = req.body;
         const sql = dbQuery('user', 'selectUserInfo',{ user_id });
         let [rows] = await conn.query(sql);
-        if(rows.length === 0) throw new Error('사용자를 확인하세요');
+        console.log(`rosw length : ${rows}`)
+        if(rows.length === 0) {
+            throw new Error('사용자를 확인하세요');
+        }
         // 비번 확인
-        if( await authUtil.passCompare(rows[0].user_password, user_password)){
+
+        if( !await authUtil.passCompare(rows[0].user_password, user_password)){
             throw new Error('비밀번호를 확인하세요');
+
         }
         // 패스워드 삭제
         delete rows[0].user_password;
@@ -43,7 +48,7 @@ exports.loginInfo = async (req, res, next) =>{
         res.send(rows[0]);
     } catch (e) {
         logger.error(`authController.js - loginInfo - 에러 ${e}`);
-        next(e);
+        next(e)
     } finally {
         conn.release();
     }
@@ -65,8 +70,9 @@ exports.countUserId = async (req , res, next) => {
         await res.send(rows[0]);
     } catch (e) {
         logger.error(`authController.js - countUserId - 에러 ${e}`);
-        next(e);
+        throw new Error("사용자 확인이 안됩니다.");
     } finally {
+        logger.info('마지막 실행되냐')
         conn.release();
     }
 }
@@ -88,6 +94,7 @@ exports.userIdUserName = async (req , res , next) => {
         logger.error(`authController.js - userIdUserName - 에러 ${e}`)
         next(e);
     } finally {
+
         conn.release();
     }
 }
@@ -102,8 +109,8 @@ exports.userInsert = async (req, res, next) => {
     logger.info('사용자 정보 저장')
     const conn = await dbConn.getConnection();
     try {
-        await conn.beginTransaction();
         let sql, rows, user_no, recommend_user_no;
+        await conn.beginTransaction();
         // 사용하는 파라미터 추출
         const {body} = req;
         let {
@@ -120,19 +127,19 @@ exports.userInsert = async (req, res, next) => {
             recommend_id
         } = body;
 
-        if(user_password){
+        if (user_password) {
             user_password = await authUtil.getHashPass(user_password);
         }
-        if(mobile_phone){
+        if (mobile_phone) {
             mobile_phone = await authUtil.getEncryptToken(mobile_phone, process.env.JWT_SECRET_OR_KEY);
         }
 
         // 1. 동일 아이디 검사
-        sql = dbQuery('user', 'selectUserCount',{user_id});
+        sql = dbQuery('user', 'selectUserCount', {user_id});
         rows = await conn.execute(sql);
-        if(rows[0][0].count !== 0) throw new Error("이미 사용자가 존재합니다");
+        if (rows[0][0].count !== 0) throw new Error("이미 사용자가 존재합니다");
         // 2. 사용자 마스터키 테이블 저장
-        sql = dbQuery('user', 'insertTbUser',{
+        sql = dbQuery('user', 'insertTbUser', {
             user_id, user_password, user_status
         });
         await conn.execute(sql);
@@ -142,15 +149,22 @@ exports.userInsert = async (req, res, next) => {
         user_no = rows[0][0].user_no;
         // 4. 사용자 일반 정보 입력
         sql = dbQuery('user', 'insertTbUserInfo', {
-            user_no, user_terms_agree, user_address, user_detail_address, mobile_phone, user_email, user_name, user_birth_day
+            user_no,
+            user_terms_agree,
+            user_address,
+            user_detail_address,
+            mobile_phone,
+            user_email,
+            user_name,
+            user_birth_day
         });
         await conn.execute(sql);
         // 5. 사용자 추천인 존재시 등록
-        if(recommend_id){
+        if (recommend_id) {
             // 다시한번 추천인 이 존재하는지 점검
             sql = dbQuery('user', 'selectUserId', {user_id: recommend_id});
             rows = await conn.execute(sql);
-            if(rows[0].length>0){
+            if (rows[0].length > 0) {
                 recommend_user_no = await rows[0][0].user_no;
                 sql = dbQuery('user', 'insertUserRecommend', {user_no, recommend_user_no});
                 await conn.execute(sql);
@@ -159,7 +173,7 @@ exports.userInsert = async (req, res, next) => {
             }
         }
         await conn.commit();
-        res.send();
+        await res.send();
     } catch (e) {
         await conn.rollback();
         logger.error(`authController.js - userInsert - 에러 ${e}`);
@@ -167,34 +181,37 @@ exports.userInsert = async (req, res, next) => {
     } finally {
         conn.release();
     }
-
+}
     /**
      * 비밀번호 변경
      * @param { request } req
      * @param { response } res
      * @param { function } next
      */
-    exports.userUpdatePassword = async (req, res, next) => {
+    exports.updatePassword = async (req, res, next) => {
         logger.info('비밀번호 변경');
-        try {
-            const { query } = req;
-            let { user_id , old_password , new_password} = query;
-            let sql,rows;
             const conn = await dbConn.getConnection();
+        try {
+            await conn.beginTransaction();
+            const { body } = req;
+            let sql,rows;
+            let { user_id , old_password , new_password} = body;
+
             // 기존 비밀번호 확인
             sql = dbQuery('user', 'selectUserId', {user_id});
             rows = await conn.execute(sql);
             if(rows[0][0].length === 0 ) throw new Error("사용아이디를 확인해주세요");
             // 변경 비빌 번호 암호화
-            if(!await authUtil.passCompare(old_password , rows[0][0].user_password)) {
-                throw new Error("사용정보를 확인해주세요");
-            }
+            // if(!await authUtil.passCompare(old_password , rows[0][0].user_password)) {
+            //     throw new Error("사용정보를 확인해주세요");
+            // }
             new_password = await authUtil.getHashPass(new_password);
             // 비밀번호 변경
             sql = dbQuery('user', 'updateUserPassword', {user_id , user_password: new_password});
             await conn.execute(sql);
             res.send();
         }catch (e) {
+            await conn.rollback();
             logger.error(`authController.js - userUpdatePassword - ${e}`);
             next(e);
         }finally {
@@ -234,7 +251,7 @@ exports.userInsert = async (req, res, next) => {
         }finally {
             conn.release();
         }
-    }
+
 }
 
 

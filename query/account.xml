@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="account">
+    <!-- 구매 유니포인트 정보 등록 - 이력부 -->
+    <insert id="insertBuyPointHistory">
+        insert into tb_buy_point_history (user_no,
+                                          type,
+                                          money,
+                                          tax,
+                                          uni_point)
+        values (#{user_no},
+                #{type},
+                #{money},
+                #{tax},
+                #{uni_point})
+    </insert>
+    <!-- 구매포인트 확인-->
+    <select id="selectBuyPointHistory">
+        select money,
+               tax,
+               uni_point
+        from tb_buy_point_history
+        where deleted_at is null
+          and user_no = #{user_no}
+        <if test="no != null  and !no.equals('')">
+          and no = #{no}
+        </if>
+        <if test="type != null  and !type.equals('')">
+          and type = #{type}
+        </if>
+    </select>
+    <!-- 유니포인트 구매 이력 삭제-->
+    <update id="deleteBuyPointHistory">
+        update
+            tb_buy_point_history
+        set deleted_at = current_timestamp()
+        where no = #{no}
+    </update>
+
+    <update id="confirmBuyPointHistory">
+        update
+            tb_buy_point_history
+        set updated_at = current_timestamp(),
+            type = 1
+        where no = #{no}
+    </update>
+
+    <!-- 사용자 금액 정보존재확인 -->
+    <select id="countUserSum">
+        select count(1) as count
+        from tb_user_sum
+        where user_no = #{value}
+          and type = #{type}
+    </select>
+
+    <!-- 사용자의 현재 금액 정보 조회 -->
+    <select id="selectUserSum">
+        select uni_point,
+        btc_point,
+        money,
+        type
+        from tb_user_sum
+        where user_no = #{user_no}
+        <if test="type != null  and !type.equals('')">
+            and type = #{type}
+        </if>
+    </select>
+
+    <!-- 사용자의 전체금액 정보 신규입력 -->
+    <insert id="insertUserSum">
+        insert into tb_user_sum (user_no,
+                                 uni_point,
+                                 btc_point,
+                                 money,
+                                 type)
+        values (#{user_no},
+                #{uni_point},
+                #{btc_point},
+                #{money},
+                #{type})
+    </insert>
+    <!-- 사용자의 전체금액 정보 수정입력 -->
+    <update id="updateUserSum">
+        update tb_user_sum
+        set uni_point  = #{uni_point},
+            btc_point  = #{btc_point},
+            money      = #{money},
+            updated_at = current_timestamp()
+        where user_no = #{user_no}
+          and type = #{type}
+    </update>
+</mapper>

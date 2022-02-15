@@ -15,8 +15,11 @@ app.use(cors({
 }));
 app.use(express.urlencoded({extended : false}));
 app.use(express.json());
+
 const userRouter = require('./routes/auth');
+const accountRouter = require('./routes/account');
 app.use('/api/auth' , userRouter);
+app.use('/api/account' , accountRouter);
 
 app.use(express.static(path.join(__dirname,'/dist')));
 // 나머지 호출은 vue 에서 처리한다.
