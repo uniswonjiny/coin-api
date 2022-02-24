@@ -18,20 +18,23 @@ app.use(express.json());
 
 const userRouter = require('./routes/auth');
 const accountRouter = require('./routes/account');
+const comRouter = require('./routes/com')
 app.use('/api/auth' , userRouter);
 app.use('/api/account' , accountRouter);
-
-app.use(express.static(path.join(__dirname,'/dist')));
-// 나머지 호출은 vue 에서 처리한다.
-app.get('/*', (req, res) => {
+app.use('/api/com' , comRouter);
+// api 서버라 화면 구성안함
+// app.use(express.static(path.join(__dirname,'/dist')));
+/*
+app.get('/!*', (req, res) => {
     res.sendFile(path.join(__dirname, 'dist' ,'index.html'))
 });
+*/
 
 // 없는 요청인경우
-// app.use((req, res, next) => {
-//   res.status = 404;
-//   next(Error('not found'));
-// })
+app.use((req, res, next) => {
+    // 그냥 에러로 날려버린다.
+  next(Error('not found'));
+})
 // 요청부분 에러발생한경우
 
 app.use(errorHandler);

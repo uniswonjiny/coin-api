@@ -7,26 +7,33 @@
                                           type,
                                           money,
                                           tax,
+                                          document_type,
+                                          document_number,
                                           uni_point)
         values (#{user_no},
                 #{type},
                 #{money},
                 #{tax},
+                #{document_type},
+                #{document_number},
                 #{uni_point})
     </insert>
     <!-- 구매포인트 확인-->
     <select id="selectBuyPointHistory">
         select money,
-               tax,
-               uni_point
+        tax,
+        uni_point,
+
+        type,
+        no
         from tb_buy_point_history
         where deleted_at is null
-          and user_no = #{user_no}
-        <if test="no != null  and !no.equals('')">
-          and no = #{no}
+        and user_no = #{user_no}
+        <if test="no != null and no!=''">
+            and no = #{no}
         </if>
-        <if test="type != null  and !type.equals('')">
-          and type = #{type}
+        <if test="type != null and type!=''">
+            and type = #{type}
         </if>
     </select>
     <!-- 유니포인트 구매 이력 삭제-->
@@ -41,7 +48,7 @@
         update
             tb_buy_point_history
         set updated_at = current_timestamp(),
-            type = 1
+            type       = #{type}
         where no = #{no}
     </update>
 
@@ -61,7 +68,7 @@
         type
         from tb_user_sum
         where user_no = #{user_no}
-        <if test="type != null  and !type.equals('')">
+        <if test="type != null and type!=''">
             and type = #{type}
         </if>
     </select>
@@ -85,8 +92,30 @@
         set uni_point  = #{uni_point},
             btc_point  = #{btc_point},
             money      = #{money},
+            type       = #{type},
             updated_at = current_timestamp()
         where user_no = #{user_no}
           and type = #{type}
     </update>
+
+    <!-- 사용자의 전체 유니포인트 -->
+    <select id="sumUserUniPoint">
+        select type, sum(uni_point) as uni_point
+        from tb_user_sum
+        where user_no = #{user_no}
+        group by type
+    </select>
+
+    <!-- 사용자 유니포인트 목록 -->
+    <select id="selectBuyUniPointList">
+        select type,
+               uni_point,
+               created_at,
+               updated_at
+        from tb_buy_point_history
+        where user_no = 1
+        order by no desc
+        limit #{start_no} ,#{size}
+    </select>
+
 </mapper>

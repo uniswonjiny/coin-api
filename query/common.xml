@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="common">
+    <!-- 구매포인트 확인-->
+    <select id="selectUnicoreAccountInfo">
+        select bank_name,
+               account_holder,
+               account_no
+        from tb_unicore_bank_history
+        where deleted_at is null
+        order by created_at desc
+        limit 0,1
+    </select>
+
+    <!-- 현재 유니포인트 가격 -->
+    <select id="selectUniPointPrice">
+        select
+            price
+        from tb_uni_point_price_history
+        order by created_at desc
+        limit 0,1
+    </select>
+</mapper>
