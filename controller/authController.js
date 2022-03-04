@@ -16,7 +16,7 @@ exports.loginInfo = async (req, res, next) =>{
         const {user_id , user_password} = req.body;
         const sql = dbQuery('user', 'selectUserInfo',{ user_id });
         let [rows] = await conn.query(sql);
-        console.log(`rosw length : ${rows}`)
+
         if(rows.length === 0) {
             throw new Error('사용자를 확인하세요');
         }

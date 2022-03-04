@@ -3,13 +3,15 @@
 <mapper namespace="account">
     <!-- 구매 유니포인트 정보 등록 - 이력부 -->
     <insert id="insertBuyPointHistory">
-        insert into tb_buy_point_history (user_no,
-                                          type,
-                                          money,
-                                          tax,
-                                          document_type,
-                                          document_number,
-                                          uni_point)
+        insert
+        into tb_buy_point_history
+        (user_no,
+         type,
+         money,
+         tax,
+         document_type,
+         document_number,
+         uni_point)
         values (#{user_no},
                 #{type},
                 #{money},
@@ -23,7 +25,6 @@
         select money,
         tax,
         uni_point,
-
         type,
         no
         from tb_buy_point_history
@@ -62,12 +63,16 @@
 
     <!-- 사용자의 현재 금액 정보 조회 -->
     <select id="selectUserSum">
-        select uni_point,
+        select
+        uni_point,
         btc_point,
         money,
         type
         from tb_user_sum
-        where user_no = #{user_no}
+        where 1=1
+        <if test="user_no!=null and user_no!=''">
+            and user_no = #{user_no}
+        </if>
         <if test="type != null and type!=''">
             and type = #{type}
         </if>
@@ -92,10 +97,10 @@
         set uni_point  = #{uni_point},
             btc_point  = #{btc_point},
             money      = #{money},
-            type       = #{type},
+            type       = #{modify_type},
             updated_at = current_timestamp()
         where user_no = #{user_no}
-          and type = #{type}
+          and type = #{origin_type}
     </update>
 
     <!-- 사용자의 전체 유니포인트 -->
@@ -116,6 +121,48 @@
         where user_no = 1
         order by no desc
         limit #{start_no} ,#{size}
+
     </select>
+    <!-- 결제단계별 포인트별 합계 -->
+    <select id="selectSumUniPoint">
+        select type,
+        sum(uni_point) as uni_point,
+        sum(money) as money,
+        sum(btc_point) as btc_point
+        from tb_user_sum
+        <if test="type!=null and type!=''">
+            where type = #{type}
+        </if>
+        group by type
+    </select>
+    <!-- 사용자별 유효한 유니포인트 -->
+    <select id="selectUserUniPointList">
+        select user_no,
+               sum(uni_point) uni_point
+        from tb_buy_point_history
+        where type = 'Y'
+          /* updated_at 를 사용하는 이유는 포인트 구매요청후 구매확정이 되는 경우 updated_at 입력된다. 생성날짜만 있다면 그경우는 확정이 안된경우  */
+          and DATE_FORMAT(updated_at, '%Y-%m-%d') &lt; #{day}
+        group by user_no
+
+    </select>
+
+    <!-- 사용자별 코인 정보 입출력 -->
+    <insert id="insertUserAccount">
+        insert into tb_user_account_list (created_at,
+                                          processed_time,
+                                          user_no,
+                                          type,
+                                          coin_value,
+                                          register_no,
+                                          coin_type)
+        values (current_timestamp(),
+                #{processed_time},
+                #{user_no},
+                #{type}
+                    #{coin_value},
+                #{register_no}
+                    #{coin_type});
+    </insert>
 
 </mapper>

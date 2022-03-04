@@ -104,7 +104,6 @@
             tua.bank_name,
             tua.bank_account,
             tua.bank_holder,
-            tbi.user_name,
             (
                 select tbu2.user_id
                 from tb_user tbu2
