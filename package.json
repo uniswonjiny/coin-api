@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "cross-env PORT=80 NODE_ENV=production pm2 start app.js",
-    "dev": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "coin-batch": "node coinScheduler.js"
   },
   "author": "",
   "license": "ISC",
@@ -24,6 +25,8 @@
     "morgan": "^1.10.0",
     "mybatis-mapper": "^0.6.5",
     "mysql2": "^2.3.3",
+    "node-fetch": "^2.6.6",
+    "node-schedule": "^2.1.0",
     "pm2": "^5.1.2",
     "winston": "^3.3.3",
     "winston-daily-rotate-file": "^4.5.5"

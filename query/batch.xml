@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="batch">
+    <!-- 코인시세 입력 -->
+    <insert id="insertCoinCurrency">
+        insert into tb_coin_price_history (coin_type, one_price, company_name, search_time)
+        values (#{coin_type}, #{one_price}, #{company_name}, #{search_time})
+    </insert>
+    <!-- 코인 입금확인및 분배할 내역 정리 목록 -->
+    <select id="getThSourceList">
+        select tpm.th,
+               tpm.uni_point,
+               tpm.amount,
+               tsIc.coin_type,
+               tsIc.coin_value,
+               tsIc.fee_coin,
+               tsIc.company_code,
+               datediff(tpm.end_date, tpm.start_date) as de_day,
+               tsIc.no                                as income_no
+        from tb_purchase_machine tpm
+                 inner join tb_source_Income_coin tsIc on tsIc.company_code = tpm.company_code
+        where tsIc.confirm_yn != 1
+          and mining_day = #{mining_day}
+    </select>
+
+    <select id="selectSourceIncomeCoin">
+        select no,
+               coin_type,
+               coin_value,
+               mining_day,
+               company_code,
+               confirm_yn,
+               created_at,
+               fee_coin,
+               de_coin,
+               fit_coin,
+               coin_currency,
+               coin_currency_time
+        from tb_source_Income_coin
+        where company_code = #{company_code}
+          and mining_day = #{mining_day}
+
+    </select>
+    <!-- 수익코익 정보 케이블 입력 -->
+    <insert id="insertSourceIncomeCoin">
+        insert into tb_source_Income_coin (coin_type,
+                                           coin_value,
+                                           mining_day,
+                                           company_code,
+                                           fee_coin)
+        values (#{coin_type},
+                #{coin_value},
+                #{mining_day},
+                #{company_code},
+                #{fee_coin})
+    </insert>
+
+    <update id="updateSourceIncomeCoinDeFitCoin">
+        update tb_source_Income_coin
+        set de_coin           = #{de_coin},
+            fit_coin          = #{fit_coin},
+            coin_currency     = #{coin_currency},
+            coin_currency_time= str_to_date(#{coin_currency_time}, '%Y-%m-%d %H:%i:%s')
+        where company_code = #{company_code}
+          and mining_day = #{mining_day}
+    </update>
+
+    <!-- 구매한 채굴기 내역 -->
+    <select id="selectPurchaseMachineList">
+        select no,
+               buy_date,
+               payment_date,
+               status,
+               purchase_no,
+               amount,
+               th,
+               uni_point,
+               company_code,
+               start_date,
+               end_date
+        from tb_purchase_machine
+        where datediff(end_date, current_date()) > 0
+          and start_date &lt;= current_date()
+    </select>
+
+    <!-- 지갑현황 수정 -->
+    <update id="updateWalletInfo">
+        update tb_wallet_info
+        set coin_value = #{coin_value}
+        where wallet_type = #{wallet_type}
+          and coin_type = #{coin_type}
+
+    </update>
+
+    <!-- 지갑현황 확인 -->
+    <select id="getWalletCoinValue">
+        select coin_value
+        from tb_wallet_info
+        where wallet_type = #{wallet_type}
+          and coin_type = #{coin_type}
+    </select>
+
+    <!-- 지갑 변경 내역 입력 -->
+    <insert id="insertWalletHistory">
+        insert into tb_wallet_history (wallet_type, trans_type, amount, balance, created_user_no, income_no)
+        values (#{wallet_type}, #{trans_type}, #{amount}, #{balance}, #{created_user_no}, #{income_no})
+    </insert>
+
+    <!-- 배당끝났음 저장-->
+    <update id="updateSourceIncomeConfirm">
+        update tb_source_Income_coin
+        set confirm_yn = 1
+        where mining_day = #{mining_day}
+    </update>
+
+    <!-- 배당가능 이익 코인 수량 확인 -->
+    <select id="selectSourceIncomeConfirmN">
+        select sum(tsIc.fit_coin) as coin , sum(tpm.uni_point) as point
+        from tb_source_Income_coin tsIc
+        inner join tb_purchase_machine tpm on tsIc.company_code = tpm.company_code
+        where tsIc.confirm_yn = 0
+          and tsIc.mining_day = #{mining_day}
+    </select>
+
+    <!-- 설정된 수수료율확인 -->
+    <select id="selectFeeInfo">
+        select detail_type,
+               value
+        from tb_setting_info
+        where deleted_at is null
+          and main_type = 'fee'
+    </select>
+
+    <!-- 추천 플러스 모집인 기준 금액 확인 -->
+    <select id="getRecommendPlusPrice">
+        select value
+        from tb_setting_info
+        where deleted_at is null
+          and main_type = 'recommend_plus'
+          and detail_type = 'recruit'
+    </select>
+
+    <!-- 추천인플러스 추천인별 총 구매 금액 -->
+    <select id="selectRecommendPlusList">
+        select tur.recommend_user_no
+        from tb_user_sum tus
+                 inner join tb_user_recommend tur on tus.user_no = tur.user_no
+        group by tur.recommend_user_no
+        having   sum(tus.money) >= #{money}
+    </select>
+    <!-- 추천플러스용 포인트당 btc  -->
+    <select id="getRecommendPlusPerBtc">
+        select * from tb_wallet_history_resale
+    </select>
+
+
+</mapper>

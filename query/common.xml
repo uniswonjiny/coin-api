@@ -5,7 +5,8 @@
     <select id="selectUnicoreAccountInfo">
         select bank_name,
                account_holder,
-               account_no
+               account_no,
+               no
         from tb_unicore_bank_history
         where deleted_at is null
         order by created_at desc
@@ -14,10 +15,36 @@
 
     <!-- 현재 유니포인트 가격 -->
     <select id="selectUniPointPrice">
-        select
-            price
+        select price
         from tb_uni_point_price_history
         order by created_at desc
         limit 0,1
     </select>
+
+    <!-- 회사에서 조사한 비트코인 시세 -->
+    <select id="getBitCoinPrice">
+        select DATE_FORMAT(search_time, '%Y-%m-%d %T') as search_time,
+               one_price
+        from tb_coin_price_history
+        where coin_type = 'bit_coin'
+        order by created_at desc
+        limit 0,1
+    </select>
+    <!-- 회사에서 조사한 비트코인 시세 -->
+    <select id="getSettingFeeList">
+        select main_type,
+               case main_type
+                   when 'fee' then '배당률'
+                   when 'recruit' then '수수료율'
+                   else '기타' end                        as fee_string
+                ,
+               detail_type,
+               value,
+               ifnull(updated_at, created_at)           as created_at,
+               ifnull(modify_user_no, register_user_no) as admin_user_no,
+               memo
+        from tb_setting_info
+        where deleted_at is null
+    </select>
+
 </mapper>

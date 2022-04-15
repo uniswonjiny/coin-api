@@ -45,7 +45,7 @@ const authUtil = {
             return val
         } catch (error) {
             logger.error(error);
-            throw new Error('사용자확인 문제');
+            throw new Error('사용자정보 확인중 문제가 발생했습니다.');
         }
     },
 

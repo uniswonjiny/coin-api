@@ -1,41 +1,182 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="calculate">
+    <!-- 지갑 입금 -->
+    <insert id="insertWallet">
+        insert into tb_wallet_history (wallet_type,
+                                       trans_type,
+                                       detail_type,
+                                       amount,
+                                       balance,
+                                       created_user_no,
+                                       seller,
+                                       resale_fee,
+                                       resale,
+                                       memo)
+        values (#{wallet_type},
+                #{trans_type},
+                #{detail_type},
+                #{amount},
+                #{balance},
+                #{created_user_no},
+                #{seller},
+                #{resale_fee},
+                #{resale},
+                #{memo})
+    </insert>
+    <!-- 지갑 목록-->
+    <select id="selectWallet">
+        select wallet_type,
+        trans_type,
+        detail_type,
+        amount,
+        balance,
+        created_user_no,
+        seller,
+        resale_fee,
+        resale,
+        memo
+        from tb_wallet_history
+        where DATE_FORMAT(created_at, '%Y-%m-%d') between #{startDate} and #{endDate}
+        <if test="created_user_no!=null and created_user_no!=''">
+            and created_user_no = #{created_user_no}
+        </if>
+        <if test="wallet_type!=null and wallet_type!=''">
+            and wallet_type = #{wallet_type}
+        </if>
+        <if test="trans_type!=null and trans_type!=''">
+            and trans_type = #{trans_type}
+        </if>
+        order by created_at desc
+        <if test="startNo!=null and startNo!=''">
+            limit #{startNo} ,#{size}
+        </if>
+
+    </select>
+
+
     <!-- 미분배된 코인을 확인한다 -->
     <select id="selectNoConfirmCoinList">
         select coin_value, no
-        from tb_source_coin
+        from tb_source_Income_coin
         where confirm_yn != 1
           and coin_type = #{coinType}
-          and DATE_FORMAT(mining_time, '%Y-%m-%d') = #{dayStr}
+          and DATE_FORMAT(mining_day, '%Y-%m-%d') = #{dayStr}
     </select>
 
     <!-- 미분배 / 분배 코인 날짜별 확인 -->
     <select id="selectCoinConfirmStatusList">
-        select confirm_yn, DATE_FORMAT(mining_time, '%Y-%m-%d') as miningDay, sum(coin_value) coin_value
-        from tb_source_coin
+        select confirm_yn, DATE_FORMAT(mining_day, '%Y-%m-%d') as miningDay, sum(coin_value) coin_value
+        from tb_source_Income_coin
         where coin_type = #{coin_type}
         <if test="confirm_yn!=null and confirm_yn!=''">
             and confirm_yn = #{confirm_yn}
         </if>
         <if test="confirm_yn!=null and confirm_yn!=''">
-            and DATE_FORMAT(mining_time, '%Y-%m-%d') = #{mining_day}
+            and DATE_FORMAT(mining_day, '%Y-%m-%d') = #{mining_day}
         </if>
-        group by DATE_FORMAT(mining_time, '%Y-%m-%d'), confirm_yn
+        group by DATE_FORMAT(mining_day, '%Y-%m-%d'), confirm_yn
 
     </select>
 
     <!-- 미분배 코인확정 / 미확정 confirm_yn 은 tinyint 이므로 true(1) false(0) 이지 y n 이 아니다. -->
     <update id="updateCoinSource">
-        update tb_source_coin
+        update tb_source_Income_coin
         set confirm_yn = #{confirmYn}
         where no = #{no}
 
     </update>
 
-    <!-- 추천인 목록추출 3차까지 뒤져야 하지만 쿼리는 단순! 디비구조 단순! 부속정보는 무조건 별도로! 지켜야함! 이렇게 적는 이유는 다음관리자들이 컬럼 마구잡이로 추가하고 이런 실수 하지 말도록!-->
-    <select id="selectRecommendList">
-        select *
-        from tb_user_recommend
+    <!-- 추천(모집인)인정보와 모집포인트 -->
+    <!-- 만약 사업이 활발해 진다면 포인트 구매 시점까지 모두 따져야 한것이다 추천인 수익 따지는 경우도 있을듯.-->
+    <select id="selectRecommendUserNoList">
+        select tur.recommend_user_no,
+               sum(tus.uni_point) uni_point
+        from tb_user_recommend tur
+                 inner join tb_user tu on tur.user_no = tu.user_no
+                 inner join tb_user_sum tus on tus.user_no = tu.user_no
+        where tu.user_status = 1
+          and tus.type = 'Y'
+        group by tur.recommend_user_no
+    </select>
+
+    <!-- 코인별 수수료율 -->
+    <select id="selectFeeList">
+        select detail_type,
+               value,
+               memo
+        from tb_setting_info
+        where deleted_at is null
+    </select>
+
+    <!-- 포인트설정정보 -->
+    <select id="selectPointSetting">
+        select type,
+               value
+        from tb_point_setting
+        where status = 1
+    </select>
+
+
+    <!-- 배치 실행결과 입력-->
+    <insert id="insertBatch">
+        insert into tb_batch_history (
+        type,
+        target_date,
+        <if test="target_time!=null and target_time!=''">
+            target_time,
+        </if>
+        status
+        )
+        values (
+        #{type},
+        #{target_date},
+        <if test="target_time!=null and target_time!=''">
+            #{target_time},
+        </if>
+        #{status}
+        )
+
+    </insert>
+
+    <!-- 배치 결과 확인 -->
+    <select id="selectBatchList">
+        select
+        type,
+        target_date,
+        target_time
+        from tb_batch_history
+        where 1=1
+        <if test="type!=null and type!=''">
+            and type = #{type}
+        </if>
+        <if test="status!=null and status!=''">
+            and status = #{status}
+        </if>
+        <if test="target_date!=null and target_date!=''">
+            and target_date = #{target_date}
+        </if>
+        <if test="target_time!=null and target_time!=''">
+            and target_time = #{target_time}
+        </if>
+    </select>
+
+    <select id="getUserRecommendUser">
+        select tu.user_no,
+               tur.recommend_user_no,
+               tus.uni_point
+        from tb_user tu
+                 left join tb_user_recommend tur on tu.user_no = tur.user_no
+                 inner join tb_user_sum tus on tus.user_no = tu.user_no and tus.type = 'Y' and tus.uni_point is not null
+        where tu.user_status = 1
+          and tu.user_no not in (
+            select tb_user_admin.user_no
+            from tb_user_admin
+            where user_grade = 'A'
+              and user_status = 1
+              and deleted_at is null
+            order by tu.user_no
+        )
+
     </select>
 </mapper>

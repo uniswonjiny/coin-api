@@ -16,9 +16,12 @@ const uniPointList = async (day, conn) => {
     try {
         const sql = dbQuery('account', 'selectUserUniPointList', { day });
         const rows = await conn.execute(sql);
-        if(rows[0][0].length === 0) return null;
-        const totalUniPoint = rows[0][0].reduce( (pre , cur) => pre + cur.uni_point);
-        return { pointList: rows[0][0], totalUniPoint}
+        let totalUniPoint = 0;
+        if(rows[0].length === 0) return null;
+        rows[0].forEach(item => {
+            totalUniPoint = totalUniPoint + Number(item.uni_point);
+        });
+        return { pointList: rows[0], totalUniPoint}
     } catch (e) {
         console.error(e);
         throw e;

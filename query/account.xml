@@ -1,55 +1,222 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="account">
+    <!-- 구매처등록 -->
+    <insert id="insertPurchase">
+        insert into tb_purchase_list
+        (company_name,
+         coin_type,
+         status,
+         fee,
+         fee_type,
+         position,
+         admin_user_no,
+         charge_contact,
+         charge_name,
+         memo)
+        values (#{company_name},
+                #{coin_type},
+                #{status},
+                #{fee},
+                #{fee_type},
+                #{position},
+                #{admin_user_no},
+                #{charge_contact},
+                #{charge_name},
+                #{memo})
+    </insert>
+    <!-- 구매처존재확인 -->
+    <select id="selectPurchaseCount">
+        select count(1) cnt
+        from tb_purchase_list
+        where company_name = #{company_name}
+          and position = #{position}
+          and fee_type = #{fee_type}
+          and fee = #{fee}
+    </select>
+
+    <!-- 구매처목록 정보 확인 -->
+    <select id="selectPurchaseList">
+        select no,
+        company_name,
+        position,
+        fee,
+        charge_name,
+        charge_contact,
+        memo
+        from tb_purchase_list
+        where 1 = 1
+        <if test="status != null and status!=''">
+            and status = ${status}
+        </if>
+        <if test="no != null and no!=''">
+            and no = ${no}
+        </if>
+        and DATE_FORMAT(IF(updated_at is null, careted_at, updated_at),
+        '%Y-%m-%d') between #{start_date} and #{end_date}
+        limit ${start_no} ,${size}
+    </select>
+    <!-- 채굴기정보 입력 -->
+    <insert id="insertPurchaseMachine">
+        insert into tb_purchase_machine
+        (buy_date,
+         purchase_no,
+         amount,
+         th,
+         uni_point,
+         created_user_no)
+        values (#{buy_date},
+                #{purchase_no},
+                #{amount},
+                #{th},
+                #{uni_point},
+                #{created_user_no})
+    </insert>
+    <!--현재 채굴기 유니포인트 재고 정보 확인 -->
+    <select id="selectThPointStatusNow">
+        select money,
+               uni_point,
+               sold_uni_point,
+               th
+        from tb_th_point_status_history
+        order by no desc
+        limit 0,1
+    </select>
+
+    <select id="selectPurchaseMachineInfo">
+        select
+        buy_date,
+        payment_date,
+        status,
+        purchase_no,
+        amount,
+        th,
+        uni_point,
+        created_user_no,
+        updated_user_no,
+        start_date,
+        end_date,
+        created_at,
+        updated_at
+        from tb_purchase_machine
+        where deleted_at is null
+        <if test="start_date != null and start_date!=''">
+            and buy_date between #{start_date} and #{end_date}
+        </if>
+        <if test="status != null and status!=''">
+            and status = #{status}
+        </if>
+        <if test="purchase_no != null and purchase_no!=''">
+            and purchase_no = #{purchase_no}
+        </if>
+        <if test="no != null and no!=''">
+            and no = ${no}
+        </if>
+        order by no desc
+    </select>
+
+    <update id="updatePurchaseMachine">
+        update tb_purchase_machine
+        set updated_at = current_timestamp(),
+        updated_user_no = #{updated_user_no},
+        status = #{status},
+        <if test="payment_date != null and payment_date!=''">
+            payment_date = #{payment_date}
+        </if>
+        <if test="start_date != null and start_date!=''">
+            start_date = #{start_date},
+            end_date = DATE_ADD( #{start_date}, INTERVAL +2 YEAR)
+        </if>
+        where no = ${no}
+
+    </update>
+
+    <!-- 채굴기 유니포인트 재고 정보 입력 이건은 입력만 있다 수정 삭제 업사 변경사항이 있다면 무조건 입력-->
+    <insert id="insertThPointStatus">
+        insert into tb_th_point_status_history
+        (th,
+         uni_point,
+         sold_uni_point,
+         created_user_no,
+         money)
+        values (#{th},
+                #{uni_point},
+                #{sold_uni_point},
+                #{created_user_no},
+                #{money})
+    </insert>
+
     <!-- 구매 유니포인트 정보 등록 - 이력부 -->
     <insert id="insertBuyPointHistory">
-        insert
-        into tb_buy_point_history
+        insert into tb_sales_point_history
         (user_no,
+         sales_type,
          type,
          money,
          tax,
          document_type,
+         uni_point,
          document_number,
-         uni_point)
+         account_no)
         values (#{user_no},
+                #{sales_type},
                 #{type},
                 #{money},
                 #{tax},
                 #{document_type},
+                #{uni_point},
                 #{document_number},
-                #{uni_point})
+                #{account_no})
     </insert>
     <!-- 구매포인트 확인-->
     <select id="selectBuyPointHistory">
-        select money,
-        tax,
-        uni_point,
-        type,
-        no
-        from tb_buy_point_history
-        where deleted_at is null
-        and user_no = #{user_no}
+        select
+        tsph.no,
+        tsph.user_no,
+        tsph.sales_type,
+        tsph.type,
+        tsph.money,
+        tsph.tax,
+        tsph.document_type,
+        tsph.uni_point,
+        tsph.document_number,
+        tsph.start_date,
+        DATE_FORMAT(tsph.created_at , '%Y-%m-%d %T') as created_at,
+        DATE_FORMAT(tsph.updated_at, '%Y-%m-%d %T') as updated_at,
+        tubh.bank_name,
+        tubh.account_no,
+        tubh.account_holder
+        from tb_sales_point_history tsph
+        left join tb_unicore_bank_history tubh
+        on tsph.account_no = tubh.no
+        where tsph.deleted_at is null
+        <if test="user_no != null and user_no!=''">
+            and tsph.user_no = #{user_no}
+        </if>
         <if test="no != null and no!=''">
-            and no = #{no}
+            and tsph.no = #{no}
         </if>
         <if test="type != null and type!=''">
-            and type = #{type}
+            and tsph.type = #{type}
         </if>
+        order by tsph.created_at desc
     </select>
     <!-- 유니포인트 구매 이력 삭제-->
     <update id="deleteBuyPointHistory">
         update
-            tb_buy_point_history
+            tb_sales_point_history
         set deleted_at = current_timestamp()
         where no = #{no}
     </update>
-
-    <update id="confirmBuyPointHistory">
+    <!-- 사용자 포인트 내역수정 Y 입금확정일경우 배당도시작 -->
+    <update id="updateBuyPointHistory">
         update
-            tb_buy_point_history
+        tb_sales_point_history
         set updated_at = current_timestamp(),
-            type       = #{type}
+        <if test="type!=null and type =='Y'">
+            start_date = current_date(),
+        </if>
+        type = #{type}
         where no = #{no}
     </update>
 
@@ -94,13 +261,19 @@
     <!-- 사용자의 전체금액 정보 수정입력 -->
     <update id="updateUserSum">
         update tb_user_sum
-        set uni_point  = #{uni_point},
-            btc_point  = #{btc_point},
-            money      = #{money},
-            type       = #{modify_type},
-            updated_at = current_timestamp()
+        set
+        <if test="btc_point!=null and btc_point!=''">
+            btc_point = #{btc_point},
+        </if>
+        <if test="uni_point!=null and uni_point!=''">
+            uni_point = #{uni_point},
+        </if>
+        <if test="money!=null and money!=''">
+            money = #{money},
+        </if>
+        updated_at = current_timestamp()
         where user_no = #{user_no}
-          and type = #{origin_type}
+        and type = #{type}
     </update>
 
     <!-- 사용자의 전체 유니포인트 -->
@@ -111,18 +284,6 @@
         group by type
     </select>
 
-    <!-- 사용자 유니포인트 목록 -->
-    <select id="selectBuyUniPointList">
-        select type,
-               uni_point,
-               created_at,
-               updated_at
-        from tb_buy_point_history
-        where user_no = 1
-        order by no desc
-        limit #{start_no} ,#{size}
-
-    </select>
     <!-- 결제단계별 포인트별 합계 -->
     <select id="selectSumUniPoint">
         select type,
@@ -137,32 +298,183 @@
     </select>
     <!-- 사용자별 유효한 유니포인트 -->
     <select id="selectUserUniPointList">
-        select user_no,
-               sum(uni_point) uni_point
-        from tb_buy_point_history
-        where type = 'Y'
-          /* updated_at 를 사용하는 이유는 포인트 구매요청후 구매확정이 되는 경우 updated_at 입력된다. 생성날짜만 있다면 그경우는 확정이 안된경우  */
-          and DATE_FORMAT(updated_at, '%Y-%m-%d') &lt; #{day}
-        group by user_no
-
+        select plus.user_no,
+               (plus.uni_point - minus.uni_point) as uni_point
+        from (select user_no,
+                     sum(uni_point) uni_point
+              from tb_sales_point_history
+              where type = 'Y'
+              group by user_no) plus
+                 left join (select user_no,
+                                   sum(uni_point) uni_point
+                            from tb_sales_point_history
+                            where type in ('P', 'S')
+                            group by user_no) minus
+                           on plus.user_no = minus.user_no
     </select>
 
     <!-- 사용자별 코인 정보 입출력 -->
     <insert id="insertUserAccount">
-        insert into tb_user_account_list (created_at,
-                                          processed_time,
+        insert into tb_user_account_list (mining_day,
                                           user_no,
                                           type,
                                           coin_value,
                                           register_no,
                                           coin_type)
-        values (current_timestamp(),
-                #{processed_time},
+        values (#{mining_day},
                 #{user_no},
-                #{type}
-                    #{coin_value},
-                #{register_no}
-                    #{coin_type});
+                #{type},
+                #{coin_value},
+                #{register_no},
+                #{coin_type})
     </insert>
+
+    <insert id="insertSalesPointAccount">
+        insert into tb_sales_point_account
+            (sales_no, bank_name, bank_account, bank_holder)
+        values (#{sales_no},
+                #{bank_name},
+                #{bank_account},
+                #{bank_holder})
+    </insert>
+
+    <!-- 사용자 누적 코인수익 -->
+    <select id="getUserBtcSum">
+        select ifnull(sum(coin_value), 0.0) coin_value
+        from tb_user_account_list
+        where type in ('I', 'C', 'P', 'R')
+          and coin_type = 'bit_coin'
+          and user_no = #{user_no}
+    </select>
+
+    <!-- 사용자 현재 코인잔고 원래는 tb_user_sum 을 사용하려 했으나 아직 미진한 부분인 있어서 목록을 사용함 차후 변경함-->
+    <select id="getUserBtcBalance">
+        select bb.coin_value - aa.coin_value as coin_value
+        from (select ifnull(sum(coin_value), 0.0) coin_value
+              from tb_user_account_list
+              where type = 'O'
+                and coin_type = 'bit_coin'
+                and user_no = #{user_no}) aa,
+             (select ifnull(sum(coin_value), 0.0) coin_value
+              from tb_user_account_list
+              where type in ('I', 'C', 'P', 'R')
+                and coin_type = 'bit_coin'
+                and user_no = #{user_no}) bb
+    </select>
+
+    <!-- 비트코인 입출고 내역 확인  -->
+    <!--코입입출종류
+    I 채굴수익 C 추천수익 P 추천플러스수익 O 출금 S-출금예정  R 추천한수익-->
+    <select id="getUserCoinList">
+        select
+        no,
+        case
+        when type in ('I', 'C', 'P', 'R') then '입고'
+        when type in ('O', 'S') then '출고'
+        else '계좌생성'
+        end
+        as type,
+        case type
+        when 'I' then '채굴'
+        when 'C' then '추천'
+        when 'P' then '추천플러스'
+        when 'R' then '추천입력'
+        when 'O' then '완료'
+        when 'S' then '예정'
+        end as detail_type,
+        coin_value,
+        sum_coin_value,
+        coin_type,
+        DATE_FORMAT( ifnull(updated_at,created_at), '%Y-%m-%d') date_day,
+        DATE_FORMAT( ifnull(updated_at,created_at), '%T') date_time
+        from tb_user_account_list
+        where
+        user_no = ${user_no}
+        <if test="type!=null and type!='' and type=='I' ">
+            and type in ('I', 'C', 'P', 'R')
+        </if>
+        <if test="type!=null and type!='' and type=='O' ">
+            and type in ('O', 'S')
+        </if>
+        order by no desc
+        limit ${start_num},${size}
+    </select>
+    <select id="countUserCoinList">
+        select count(1) count
+        from tb_user_account_list
+        where
+        user_no = ${user_no}
+        <if test="type!=null and type!='' and type=='I' ">
+            and type in ('I', 'C', 'P', 'R')
+        </if>
+        <if test="type!=null and type!='' and type=='O' ">
+            and type in ('O', 'S')
+        </if>
+    </select>
+    <!-- 채굴, 추천, 플러스 수익 -->
+    <select id="getBenefit">
+        select ifnull((select sum(coin_value) from tb_user_account_list where type = 'I' and user_no = ${user_no}),
+                      0) as coin_value,
+               '채굴수익'    as type_string,
+               'I'       as type
+        union all
+        select ifnull((select sum(coin_value) from tb_user_account_list where type = 'C' and user_no = ${user_no}),
+                      0) as coin_value,
+               '추천수익'    as type_string,
+               'C'       as type
+        union all
+        select ifnull((select coin_value from tb_user_account_list where type = 'P' and user_no = ${user_no}),
+                      0) as coin_value,
+               '추천플러스'   as type_string,
+               'P'       as type
+        union all
+        select ifnull((select coin_value from tb_user_account_list where type = 'R' and user_no = ${user_no}),
+                      0) as coin_value,
+               '추천한수익'   as type_string,
+               'R'       as type
+    </select>
+
+    <!-- 포인드 구매 금액정보 : 합계 금액 구하는 부분인 정확도가 확인이되면 SUM 테이블로 교체한다.환매의 경우 환매 확정을 뺀다. 환매 요청 팔때는 빼고 수익계산등에서는 합친다. -->
+    <select id="getSumBuyMoney">
+        select ifnull(plus.uni_point, 0) - ifnull(minus.uni_point, 0) as uni_point,
+               ifnull(plus.money, 0) - ifnull(minus.money, 0)         as money
+        from (select sum(uni_point) as uni_point, sum(money) as money
+              from tb_sales_point_history
+              where type = 'P'
+                and user_no = ${user_no}) minus,
+             (select sum(uni_point) as uni_point, sum(money) as money
+              from tb_sales_point_history
+              where type = 'Y'
+                and user_no = ${user_no}) plus
+    </select>
+
+    <!-- 환매요청시 계좌 정보만 입력하는 부분 -->
+    <insert id="insertUserResaleHistory">
+        insert into tb_user_resale_history (account_list_no,
+                                            bank_account_no,
+                                            bank_name,
+                                            bank_holder,
+                                            coin_value,
+                                            money,
+                                            resale_fee,
+                                            withdrawal)
+        values (#{account_list_no},
+                #{bank_account_no},
+                #{bank_name},
+                #{bank_holder},
+                #{coin_value},
+                #{money},
+                #{resale_fee},
+                #{withdrawal})
+    </insert>
+
+    <!-- tb_user_account_list 의 번호획득 자바 mybatis selected-key 기능이 없다 그래서 필요함 -->
+    <select id="selectUserAccountListNo">
+        select no
+        from tb_user_account_list
+        where user_no = ${user_no}
+        order by no desc
+        limit 0,1
+    </select>
 
 </mapper>

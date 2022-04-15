@@ -1,7 +1,6 @@
 const jwt = require('jsonwebtoken');
 const logger =  require('../config/logger');
 const dotenv = require('dotenv');
-const authUtil = require('../utils/authUtil');
 dotenv.config();
 
 const auth = {
@@ -13,14 +12,9 @@ const auth = {
             if (!authorization) {
                 logger.error(`인증키가 존재하지 않음 - ${req.ip}` );
                 return res.status(401).send('인증키가 존재하지 않음');
-                //throw new Error('인증되지 않은 요청입니다. 다시 로그인하세요');
             }
             // 인증키가 위변조 된것인지 확인
-            const decoded = await jwt.verify(authorization, process.env.JWT_SECRET_OR_KEY, null , null);
-            // 인증확인후 response 에 갱신된 인증키를 보낸다.
-            const token = await authUtil.getToken(decoded.value ,process.env.PRIVATE_KEY , process.env.JWT_EXPIRES_TIME, process.env.JWT_ISSUER)
-            // 인증용 갱신된 인증키를 response 에 적용한다.
-            res.header('authorization' , token);
+            await jwt.verify(authorization, process.env.JWT_SECRET_OR_KEY, null , null);
             next();
         } catch (e) {
             logger.error(`인증키에 문제가 있습니다. ${e}` );

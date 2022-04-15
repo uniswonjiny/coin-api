@@ -2,150 +2,187 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="user">
     <select id="selectUserId">
-        SELECT
-            user_no,
-            user_id,
-            user_password,
-            created_at,
-            updated_at,
-            deleted_at,
-            user_status
+        SELECT user_no,
+               user_id,
+               user_password,
+               created_at,
+               updated_at,
+               deleted_at,
+               user_status
+        FROM tb_user
+        where user_id = #{user_id}
+    </select>
+
+    <select id="getUserNo">
+        SELECT user_no
         FROM tb_user
         where user_id = #{user_id}
     </select>
 
     <select id="selectUserIdName">
-        SELECT
-            tu.user_id,
-            tui.user_name
+        SELECT tu.user_id,
+               tui.user_name
         from tb_user tu
                  inner join tb_user_info tui
-            on tu.user_no = tui.user_no
+                            on tu.user_no = tui.user_no
         where tu.user_id = #{user_id}
     </select>
 
     <select id="selectUserNo">
-        SELECT
-        user_no,
-        user_id,
-        user_password,
-        created_at,
-        updated_at,
-        deleted_at,
-        user_status
+        SELECT user_no,
+               user_id,
+               user_password,
+               created_at,
+               updated_at,
+               deleted_at,
+               user_status
         FROM tb_user
         where user_no = #{user_no}
     </select>
 
     <select id="selectUserCount">
-        SELECT
-            count(1) count
+        SELECT count(1) count
         FROM tb_user
         where user_id = #{user_id}
     </select>
 
     <insert id="insertTbUser">
-        insert into tb_user (
-            user_id,
-            user_password,
-            user_status
-        )
-        values (
-            #{user_id},
-            #{user_password},
-            #{user_status}
-        )
+        insert into tb_user (user_id,
+                             user_password,
+                             user_status)
+        values (#{user_id},
+                #{user_password},
+                #{user_status})
     </insert>
 
     <insert id="insertTbUserInfo">
         insert into tb_user_info
-        (
-             user_no,
-             user_terms_agree,
-             user_address,
-             user_detail_address,
-             mobile_phone,
-             user_email,
-             user_name,
-             user_birth_day
-        )
-        values (
-            #{user_no},
-            #{user_terms_agree},
-            #{user_address},
-            #{user_detail_address},
-            #{mobile_phone},
-            #{user_email},
-            #{user_name},
-            #{user_birth_day}
-        )
+        (user_no,
+         user_terms_agree,
+         user_address,
+         user_detail_address,
+         mobile_phone,
+         user_email,
+         user_name,
+         user_birth_day)
+        values (#{user_no},
+                #{user_terms_agree},
+                #{user_address},
+                #{user_detail_address},
+                #{mobile_phone},
+                #{user_email},
+                #{user_name},
+                #{user_birth_day})
     </insert>
 
     <insert id="insertUserRecommend">
         insert into tb_user_recommend
-        (
-            user_no,
-            recommend_user_no
-        )
-        values (
-            #{user_no},
-            #{recommend_user_no}
-        )
+        (user_no,
+         recommend_user_no)
+        values (#{user_no},
+                #{recommend_user_no})
     </insert>
 
     <select id="selectUserInfo">
-        select
-            tbs.user_id,
-            tbs.user_password,
-            tbs.user_status,
-            tbi.user_name,
-            tbi.mobile_phone,
-            tbi.user_birth_day,
-            tua.bank_name,
-            tua.bank_account,
-            tua.bank_holder,
-            (
-                select tbu2.user_id
+        select tbs.user_id,
+               tbs.user_no,
+               tbs.user_password,
+               tbs.user_status,
+               tbi.user_name,
+               tbi.mobile_phone,
+               tbi.user_birth_day,
+               tua.bank_name,
+               tua.bank_account,
+               tua.bank_holder,
+               (select tbu2.user_id
                 from tb_user tbu2
-                where tbu2.user_no = tur.recommend_user_no
-            ) as recommend_user_id
+                where tbu2.user_no = tur.recommend_user_no) as recommend_user_id,
+               (select tbu2.user_name
+                from tb_user_info tbu2
+                where tbu2.user_no = tur.recommend_user_no) as recommend_user_name
         from tb_user tbs
-            inner join tb_user_info tbi
-                on tbs.user_no = tbi.user_no
-            left join tb_user_account tua
-                on tbi.user_no = tbs.user_no
-            left join tb_user_recommend tur
-                on tbs.user_no = tur.user_no
+                 inner join tb_user_info tbi
+                            on tbs.user_no = tbi.user_no
+                 left join tb_user_bank_account tua
+                           on tbi.user_no = tbs.user_no
+                 left join tb_user_recommend tur
+                           on tbs.user_no = tur.user_no
         where tbs.user_id = #{user_id}
     </select>
 
     <update id="updateUserPassword">
-        update tb_user set user_password = #{user_password} where user_id = #{user_id}
+        update tb_user
+        set user_password = #{user_password}
+        where user_id = #{user_id}
     </update>
+    <!-- 사용자 계좌 정보 확인 -->
+    <select id="selectUserBankAccount">
+        select bank_name,
+               bank_account,
+               bank_holder,
+               created_at,
+               ifnull(updated_at, created_at) as created_at
+        from tb_user_bank_account
+        where deleted_at is null
+          and user_no = ${user_no}
+    </select>
 
-    <insert id="insertUserAccount">
-        insert into tb_user_account (
-            user_no,
-            bank_name,
-            bank_account,
-            bank_holder
-        )
-        values (
-            #{user_no},
-            #{bank_name},
-            #{bank_account},
-            #{bank_holder}
-        )
+    <insert id="insertUserBank">
+        insert into tb_user_bank_account (user_no,
+                                          bank_name,
+                                          bank_account,
+                                          bank_holder)
+        values (#{user_no},
+                #{bank_name},
+                #{bank_account},
+                #{bank_holder})
     </insert>
 
-    <update id="updateUserAccount">
-        update created_at
-        set
-            bank_name = #{bank_name},
+    <update id="updateUserBankAccount">
+        update tb_user_bank_account
+        set bank_name    = #{bank_name},
             bank_account = #{bank_account},
-            bank_holder = # {bank_holder},
-            updated_at = current_timestamp()
-        where user_no = #{user_no};
+            bank_holder  = #{bank_holder},
+            updated_at   = current_timestamp()
+        where user_no = ${user_no}
     </update>
+    <!-- 사용자의 추천인 정보 목록 -->
+    <select id="selectRecommendUserList">
+        select user_no, recommend_user_no
+        from tb_user_recommend
+        where deleted_at is null
+    </select>
+    DATE_FORMAT(IF(updated_at is null, careted_at, updated_at),
+    '%Y-%m-%d')
+    <!-- 공지사항목록 -->
+    <select id="selectMessageList">
+        select tml.no,
+               tml.type,
+               tml.view_able,
+               tml.title,
+               tml.content,
+               tml.bigo,
+               DATE_FORMAT(tml.created_at, '%Y-%m-%d %T') as created_at,
+               DATE_FORMAT(tml.updated_at, '%Y-%m-%d %T') as updated_at,
+               tml.created_user_no,
+               tml.updated_user_no,
+               case
+                   when tml2.message_no is null then 0
+                   else 1
+                   end as saw_flag
+        from tb_message_list tml
+                 left join (select *
+                            from tb_message_user_read_List
+                            where user_no = ${user_no}) tml2
+                           on tml.no = tml2.message_no
+        where tml.deleted_at is null
+        order by tml.no desc
+    </select>
+    <!-- 공지사항읽음 기록 -->
+    <insert id="insertMessageReadList">
+        insert into tb_message_user_read_List (message_no, user_no)
+        values (#{message_no}, ${user_no})
+    </insert>
+
 
 </mapper>
