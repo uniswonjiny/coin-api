@@ -115,9 +115,9 @@
 
     <!-- 배당가능 이익 코인 수량 확인 -->
     <select id="selectSourceIncomeConfirmN">
-        select sum(tsIc.fit_coin) as coin , sum(tpm.uni_point) as point
+        select sum(tsIc.fit_coin) as coin, sum(tpm.uni_point) as point
         from tb_source_Income_coin tsIc
-        inner join tb_purchase_machine tpm on tsIc.company_code = tpm.company_code
+                 inner join tb_purchase_machine tpm on tsIc.company_code = tpm.company_code
         where tsIc.confirm_yn = 0
           and tsIc.mining_day = #{mining_day}
     </select>
@@ -146,12 +146,21 @@
         from tb_user_sum tus
                  inner join tb_user_recommend tur on tus.user_no = tur.user_no
         group by tur.recommend_user_no
-        having   sum(tus.money) >= #{money}
+        having sum(tus.money) >= #{money}
     </select>
     <!-- 추천플러스용 포인트당 btc  -->
     <select id="getRecommendPlusPerBtc">
-        select * from tb_wallet_history_resale
+        select *
+        from tb_wallet_history_resale
     </select>
 
+    <!-- 코인가격확인 스케줄간격 확인-->
+    <select id="getCoinInterval">
+        select exchange,
+               min_interval
+        from tb_coin_schedule
+        order by no desc
+        limit 0 ,1
+    </select>
 
 </mapper>

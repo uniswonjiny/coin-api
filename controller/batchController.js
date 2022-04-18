@@ -9,7 +9,27 @@ const logger = require('../config/logger');
 const env = process.env.NODE_ENV || 'development';
 const dbConn = require('../config/dbInfo')[env];
 const {uniPointModel, coinModel, authModel, calcModel} = require('../model');
-const {sourceCoinGet, dividendCoinCalc, dividendCoin} = require("../model/Coin");
+const {sourceCoinGet, dividendCoinCalc, dividendCoin, upBitBitCoinPrice} = require("../model/Coin");
+/**
+ * 코인가격현재 시세 확인
+ * */
+exports.upBitCoinPrice = async () =>{
+    const conn = await dbConn.getConnection();
+    try {
+        // 시장가격 확인
+        console.log("코인 1")
+        await upBitBitCoinPrice(conn, true);
+        // 시세 확인 가격 시간조회
+        const sql = dbQuery('batch', 'getCoinInterval',null)
+        const rows = await conn.execute(sql);
+
+        return rows[0][0].min_interval;
+    } catch (e) {
+        console.error(e)
+    } finally {
+        conn.release();
+    }
+}
 /**
  * 채굴기 구매단위로 배당 가능 코인을 구한다.
  * @param { String } mining_day 배치실행대상 날짜
@@ -22,12 +42,12 @@ exports.setFitCoinBatch = async (mining_day ) => {
     let originalCoin = 0.00000000; // 분배대상 원래 코인
     try {
         // 업체로 부터 최초 분배가능 금액을 확인및 입력한다.
-        // await sourceCoinGet(mining_day);
+         await sourceCoinGet(mining_day);
         // 감가 상각및 배당 가능 코인 금액을 계산한다.
         // await dividendCoinCalc(mining_day);
         // 코인들 배당실행
 
-        await dividendCoin(mining_day)
+        //await dividendCoin(mining_day)
 
     } catch (e) {
         logger.error(e)

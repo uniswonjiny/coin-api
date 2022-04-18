@@ -181,8 +181,15 @@
     <!-- 공지사항읽음 기록 -->
     <insert id="insertMessageReadList">
         insert into tb_message_user_read_List (message_no, user_no)
-        values (#{message_no}, ${user_no})
+        values (${message_no}, ${user_no})
     </insert>
+
+    <!-- 공지사항 읽음 존재 확인 -->
+    <select id="selectMessageUserReadList">
+        select count(1) as count from
+        tb_message_user_read_List
+        where message_no = ${message_no} and user_no= ${user_no}
+    </select>
 
 
 </mapper>

@@ -356,10 +356,13 @@ exports.userMessageSawInsert = async (req, res, next) => {
         let {
             user_no, message_no
         } = body;
-        // 사용자 번호획득
-        const sql = dbQuery('user', 'insertMessageReadList', {user_no, message_no});
-        const rows = await conn.execute(sql);
-        res.send(rows[0]);
+        let sql = dbQuery('user', 'selectMessageUserReadList', {user_no, message_no});
+        let rows = await conn.execute(sql);
+        if(rows[0][0].count < 1){
+            sql = dbQuery('user', 'insertMessageReadList', {user_no, message_no});
+            await conn.execute(sql);
+        }
+        res.send('ok');
     } catch (e) {
         logger.error(`authController.js - userMessageSawInsert - ${e}`);
         next(e);

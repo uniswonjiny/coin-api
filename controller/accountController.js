@@ -248,7 +248,7 @@ exports.buyUniPoint = async (req, res, next) => {
         uniPoint = rows[0][0].uni_point;
         // 사용자가 존재확인
         // 사용자 번호 획득
-        user_no = getUserNo(user_id,conn);
+        user_no = await getUserNo(user_id,conn);
 
         // 판매가능 포인트 상태변경
         sql = dbQuery('account', 'insertThPointStatus', {

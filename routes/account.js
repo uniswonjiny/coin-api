@@ -18,7 +18,7 @@ router.post('/pointThList', controller.pointThList);
 // 유니포인트(사용자) 구매
 router.post('/buyUniPoint', controller.buyUniPoint);
 // 유니포인트(사용자) 판매신청
-router.post('/buyUniPoint', controller.buyUniPoint);
+router.post('/sellUniPoint', controller.sellUniPoint);
 
 // 유니포인트(사용자) 구매*판매 신청 확정
 router.post('/uniPointConfirm', controller.uniPointConfirm);

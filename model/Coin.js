@@ -118,10 +118,13 @@ const insertCoinSum = (list, conn) => {
 
 const upBitBitCoinPrice = async (conn, insertFlag) => {
     try {
+        console.log("코인 2")
         const options = {method: 'GET', headers: {Accept: 'application/json'}};
         const url = 'https://api.upbit.com/v1/candles/minutes/1?market=KRW-BTC&count=1';
         const response = await fetch(url, options);
+        console.log(response)
         const data = await response.json();
+        console.log(data)
         const search_time = data[0].candle_date_time_kst;
         const one_price = data[0].trade_price;
         const coin_type = 'bit_coin';
@@ -134,6 +137,7 @@ const upBitBitCoinPrice = async (conn, insertFlag) => {
         }
         return data[0];
     } catch (e) {
+
         logger.error(e);
     }
 }
@@ -198,6 +202,7 @@ const dividendCoinCalc = async (mining_day) => {
     try {
         await conn.beginTransaction();
         if (!mining_day) mining_day = getDate();
+
         // 구매 th
         sql = dbQuery('batch', 'getThSourceList', {mining_day});
         rows = await conn.execute(sql);
