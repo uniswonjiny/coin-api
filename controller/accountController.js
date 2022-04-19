@@ -248,7 +248,7 @@ exports.buyUniPoint = async (req, res, next) => {
         uniPoint = rows[0][0].uni_point;
         // 사용자가 존재확인
         // 사용자 번호 획득
-        user_no = await getUserNo(user_id,conn);
+        user_no = await getUserNo(user_id, conn);
 
         // 판매가능 포인트 상태변경
         sql = dbQuery('account', 'insertThPointStatus', {
@@ -302,10 +302,10 @@ exports.sellUniPoint = async (req, res, next) => {
     const conn = await dbConn.getConnection();
     try {
         await conn.beginTransaction();
-        let sql = "", user_no = 0, rows = [], btc_point = 0, sales_type = 'P', type = 'S'; // 고객이 유니코아에 포인트를 판매하는 개념이다.
+        let sql = "", rows = [], btc_point = 0, sales_type = 'P', type = 'S'; // 고객이 유니코아에 포인트를 판매하는 개념이다.
         const {body} = req;
         let {
-            user_id,
+            user_no,
             money,
             tax,
             uni_point
@@ -314,9 +314,6 @@ exports.sellUniPoint = async (req, res, next) => {
         // 필수 정보 확인
         if (isNaN(money) || isNaN(uni_point) || isNaN(tax)) throw new Error("금액 정보를 확인하세요.");
         if (money === 0 || uni_point === 0) throw new Error("구매금액정보를 확인하세요");
-
-        // 사용자 번호 획득
-        user_no = getUserNo(user_id,conn);
 
         sql = dbQuery('account', 'insertBuyPointHistory', {
             user_no,
@@ -327,7 +324,7 @@ exports.sellUniPoint = async (req, res, next) => {
             tax,
             document_type: null,
             document_number: null,
-            account_no:null // 포인트 판매 확정일때 사용자의 계좌번호 순번을 여기에 넣어버리자!!!!!!
+            account_no: null // 포인트 판매 확정일때 사용자의 계좌번호 순번을 여기에 넣어버리자!!!!!!
         });
         await conn.execute(sql);
 
@@ -544,7 +541,25 @@ exports.refundPoint = async (req, res, next) => {
 exports.uniPointList = async (req, res, next) => {
     const conn = await dbConn.getConnection();
     try {
-        let sql, rows, user_no, userSumInfo, userPointList;
+        let sql, rows, user_no, userPointList;
+        // 사용자가 확정금액
+        let userSumInfo = {
+            uni_point: 0,
+            btc_point: 0,
+            money: 0
+        };
+        // 판매요청금액
+        let sellRSumInfo = {
+            uni_point: 0,
+            btc_point: 0,
+            money: 0
+        };
+        // 구매요청금액
+        let buyRSumInfo = {
+            uni_point: 0,
+            btc_point: 0,
+            money: 0
+        };
 
         const user_id = req.params.userId
         sql = dbQuery('user', 'selectUserId', {user_id});
@@ -555,7 +570,18 @@ exports.uniPointList = async (req, res, next) => {
         // 현재 최종확정 보유한 유니포인트
         sql = dbQuery('account', 'selectUserSum', {user_no, type: 'Y'});
         rows = await conn.execute(sql);
-        userSumInfo = rows[0][0]
+        if (rows) userSumInfo = rows[0][0];
+
+        // 현재 판매요청중인 금액
+        sql = dbQuery('account', 'selectUserSum', {user_no, type: 'S'});
+        rows = await conn.execute(sql);
+        if (rows) sellRSumInfo = rows[0][0]
+
+        // 현재 구매요청중인 금액
+        sql = dbQuery('account', 'selectUserSum', {user_no, type: 'R'});
+        rows = await conn.execute(sql);
+        if (rows) buyRSumInfo = rows[0][0]
+
         // 모든 유니포인트 목록
         sql = dbQuery('account', 'selectBuyPointHistory', {user_no});
         rows = await conn.execute(sql);
@@ -564,7 +590,7 @@ exports.uniPointList = async (req, res, next) => {
             userPointList.document_number = await authUtil.getDecryptToken(userPointList.document_number, process.env.JWT_SECRET_OR_KEY)
         }
         if (userPointList.length > 0 && !!userPointList[0].document_number) userPointList[0].document_number = await authUtil.getDecryptToken(userPointList[0].document_number, process.env.JWT_SECRET_OR_KEY);
-        res.send({userSumInfo, userPointList});
+        res.send({userSumInfo, userPointList, sellRSumInfo, buyRSumInfo});
     } catch (e) {
         logger.error(`accountController.js - uniPointList - 에러 ${e}`);
         next(e)

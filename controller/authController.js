@@ -52,6 +52,45 @@ exports.loginInfo = async (req, res, next) => {
         conn.release();
     }
 }
+// 인증키만으로 로그인하기
+exports.authInfo = async (req, res, next) => {
+    const conn = await dbConn.getConnection();
+    try {
+        // 사용자 정보 아이디로 추출
+        const { authorization } = req.headers;
+        const user_id = await authUtil.getDecryptToken(authorization ,process.env.JWT_SECRET_OR_KEY)
+        const sql = dbQuery('user', 'selectUserInfo', {user_id});
+        let [rows] = await conn.query(sql);
+
+        if (rows.length === 0) {
+            throw new Error();
+        }
+
+        // 패스워드 삭제
+        delete rows[0].user_password;
+
+        if (rows[0].mobile_phone) {
+            rows[0].mobile_phone = await authUtil.getDecryptToken(rows[0].mobile_phone, process.env.JWT_SECRET_OR_KEY);
+        }
+        if (rows[0].bank_name) {
+            rows[0].bank_name = await authUtil.getDecryptToken(rows[0].bank_name, process.env.JWT_SECRET_OR_KEY);
+        }
+        if (rows[0].bank_account) {
+            rows[0].bank_account = await authUtil.getDecryptToken(rows[0].bank_account, process.env.JWT_SECRET_OR_KEY);
+        }
+        if (rows[0].bank_holder) {
+            rows[0].bank_holder = await authUtil.getDecryptToken(rows[0].bank_holder, process.env.JWT_SECRET_OR_KEY);
+        }
+        // jwt 획득하기
+        const token = await authUtil.getToken(user_id, process.env.JWT_SECRET_OR_KEY, process.env.JWT_EXPIRES_TIME, process.env.JWT_ISSUER);
+        res.send({userInfo: rows[0], authKey: token});
+    } catch (e) {
+        logger.error(`authController.js - authInfo - 에러 ${e}`);
+        next('인증키에 문제')
+    } finally {
+        conn.release();
+    }
+}
 // 인증키만
 exports.getAuthKey = async (req, res, next) => {
     const conn = await dbConn.getConnection();

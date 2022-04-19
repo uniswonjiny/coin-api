@@ -11,6 +11,8 @@ router.get('/userName/:userId', auth.notAuth, controller.userIdUserName);
 router.post('/userInsert', auth.notAuth, controller.userInsert);
 // 사용자 정보 - 로그인 자세한 사용자 정보도
 router.post('/loginInfo', auth.notAuth, controller.loginInfo);
+// 사용자 정보 - 인증키로 로그인하기
+router.post('/authInfo', auth.ensureAuth, controller.authInfo);
 // 비밀번호 변경
 router.post('/updatePassword', auth.ensureAuth, controller.updatePassword);
 // 출금계좌 변경
