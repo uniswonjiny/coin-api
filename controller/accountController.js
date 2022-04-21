@@ -352,6 +352,7 @@ exports.sellUniPoint = async (req, res, next) => {
 }
 
 // 포인트 요청 확정 - 관리자가 하는 부분
+// 가입할때 기본 계정 정보를 만든 다는 가정하에 합계 금액은 업데이트만 한다.
 exports.uniPointConfirm = async (req, res, next) => {
     const conn = await dbConn.getConnection();
     try {
@@ -359,7 +360,7 @@ exports.uniPointConfirm = async (req, res, next) => {
         let sql = '', user_no = 0, rows = [], type = 'Y';
         let userUniPoint = 0, userBtcPoint = 0.0, userMoney = 0;
         let salesUniPoint = 0, salesMoney = 0;
-        let sumBool = false; //tb_user_sum 값이 존재확인
+
         const {body} = req;
         let {no, confirmType} = body;
         // 구매요쳥확정
@@ -399,17 +400,10 @@ exports.uniPointConfirm = async (req, res, next) => {
         sql = dbQuery('account', 'selectUserSum', {user_no, type: 'Y'});
         rows = await conn.execute(sql);
         if (confirmType === 'Y') {
-            if (rows[0].length > 0) {
-                sumBool = true;
-                userUniPoint = Number(rows[0][0].uni_point) + Number(salesUniPoint);
-                userBtcPoint = rows[0][0].btc_point;
-                userMoney = Number(rows[0][0].money) + Number(salesMoney);
-            } else {
-                sumBool = false;
-                userUniPoint = Number(salesUniPoint);
-                userBtcPoint = 0.00000000;
-                userMoney = Number(salesMoney);
-            }
+
+            userUniPoint = Number(rows[0][0].uni_point) + Number(salesUniPoint);
+            userBtcPoint = rows[0][0].btc_point;
+            userMoney = Number(rows[0][0].money) + Number(salesMoney);
         }
         // 판매출금확인확정
         if (confirmType === 'P') {
@@ -428,23 +422,13 @@ exports.uniPointConfirm = async (req, res, next) => {
             });
         }
 
-        if (sumBool) {
-            sql = dbQuery('account', 'updateUserSum', {
-                user_no,
-                uni_point: userUniPoint,
-                btc_point: userBtcPoint,
-                money: userMoney,
-                type: 'Y' // 타입구분 코드가 좀 헤갈리는 부분이 있음 조심!!!
-            });
-        } else {
-            sql = dbQuery('account', 'insertUserSum', {
-                user_no,
-                uni_point: userUniPoint,
-                btc_point: userBtcPoint,
-                money: userMoney,
-                type: 'Y'
-            });
-        }
+        sql = dbQuery('account', 'updateUserSum', {
+            user_no,
+            uni_point: userUniPoint,
+            btc_point: userBtcPoint,
+            money: userMoney,
+            type: 'Y' // 타입구분 코드가 좀 헤갈리는 부분이 있음 조심!!!
+        });
 
         await conn.execute(sql);
         await conn.commit();
@@ -765,6 +749,14 @@ exports.sellBtcUser = async (req, res, next) => {
         } = body;
 
         let sql = '', rows = [], accountListNo = 0;
+        // 0. 직접 합계 금액을 구하고 빼준다
+        sql = dbQuery('account', 'getUserCoinList', {
+            user_no,
+            start_num : 0,
+            size: 1
+        });
+        rows = await conn.execute(sql);
+
 
         // 1. tb_user_account_list 사용자 매출에 환매요청 정보 입력
         sql = dbQuery('account', 'insertUserAccount', {
@@ -772,8 +764,9 @@ exports.sellBtcUser = async (req, res, next) => {
             user_no,
             type: 'S',
             coin_value: coinAmount,
+            sum_coin_value : rows[0][0].sum_coin_value - coinAmount ,
             register_no: user_no, // 사용자가 요청한것이니 사용자 번호가 들어가야 한다.
-            coin_type: null, // 일단은 비트코인만 존재하는 것으로 생각한다.
+            coin_type: 'bit_coin', // 일단은 비트코인만 존재하는 것으로 생각한다.
 
         });
         await conn.execute(sql);
@@ -798,6 +791,7 @@ exports.sellBtcUser = async (req, res, next) => {
 
         await conn.execute(sql);
         await conn.commit();
+        res.send();
     } catch (e) {
         console.error(e)
         conn.rollback();

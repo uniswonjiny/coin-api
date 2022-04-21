@@ -320,13 +320,15 @@
                                           type,
                                           coin_value,
                                           register_no,
-                                          coin_type)
+                                          coin_type,
+                                          sum_coin_value)
         values (#{mining_day},
                 #{user_no},
                 #{type},
                 #{coin_value},
                 #{register_no},
-                #{coin_type})
+                #{coin_type},
+                #{sum_coin_value})
     </insert>
 
     <insert id="insertSalesPointAccount">
@@ -352,7 +354,7 @@
         select bb.coin_value - aa.coin_value as coin_value
         from (select ifnull(sum(coin_value), 0.0) coin_value
               from tb_user_account_list
-              where type = 'O'
+              where type in ('O' , 'S' )
                 and coin_type = 'bit_coin'
                 and user_no = #{user_no}) aa,
              (select ifnull(sum(coin_value), 0.0) coin_value
