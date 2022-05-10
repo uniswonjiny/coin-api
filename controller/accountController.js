@@ -13,14 +13,14 @@ const {getUserNo} = require("../model/Auth");
 
 /**
  * 구매처등록
- * @param { request } req
- * @param { response } res
- * @param { function } next
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
  */
 exports.buyCompany = async (req, res, next) => {
     const conn = await dbConn.getConnection();
     try {
-        let sql = '';
+        let sql;
         const {body} = await req;
         const {
             company_name,
@@ -56,7 +56,7 @@ exports.buyCompany = async (req, res, next) => {
         });
 
         await conn.execute(sql);
-        res.send('ok');
+        await res.send();
     } catch (e) {
         logger.error(e)
         next(e)
@@ -65,7 +65,12 @@ exports.buyCompany = async (req, res, next) => {
     }
 }
 
-// 구매처 목록 - 단건의 경우 no 있으면 된다. 구매처가 많을수 없으므로 정렬은 뺐다.
+/**
+ * 구매처 목록 - 단건의 경우 no 있으면 된다. 구매처가 많을수 없으므로 정렬은 뺐다.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 exports.buyCompanyList = async (req, res, next) => {
     const conn = await dbConn.getConnection();
     try {
@@ -89,8 +94,13 @@ exports.buyCompanyList = async (req, res, next) => {
     }
 }
 
-// 회사의 판매용 포인트(판매상품재고관리 개념) 추가와 소멸
-// 사용자의 포인트 구매와 환매와 구별필요
+/**
+ * 회사의 판매용 포인트(판매상품재고관리 개념) 추가와 소멸
+ * 사용자의 포인트 구매와 환매와 구별필요
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 exports.pointThPreInsert = async (req, res, next) => {
     const conn = await dbConn.getConnection();
     try {
@@ -111,7 +121,12 @@ exports.pointThPreInsert = async (req, res, next) => {
     }
 }
 
-// 채굴기 구매 목록
+/**
+ * 채굴기 구매 목록
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 exports.pointThList = async (req, res, next) => {
     const conn = await dbConn.getConnection();
     try {
@@ -136,8 +151,13 @@ exports.pointThList = async (req, res, next) => {
     }
 }
 
-//  송금처리 완료 / 채굴시작일자
-// 사용자의 포인트 구매와 환매와 구별필요
+/**
+ * 송금처리 완료 / 채굴시작일자
+ * 사용자의 포인트 구매와 환매와 구별필요
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 exports.pointThPreUpdate = async (req, res, next) => {
     const conn = await dbConn.getConnection();
     try {
@@ -146,7 +166,7 @@ exports.pointThPreUpdate = async (req, res, next) => {
         const {target_date, type, no, admin_user_no} = body;
         let nowTh = 0, nowAmount = 0, nowUniPoint = 0; // 사들여서 판매 재고로 올려야 하는 부분
         let statusTh = 0, statusUniPoint = 0, money = 0, statusSoldUniPoint = 0; // 재고 정보
-        let sql = '', rows = [];
+        let sql, rows;
         // 0. 존재하는지 확인
         sql = dbQuery('account', 'selectPurchaseMachineInfo', {no});
         rows = await conn.execute(sql);
@@ -217,7 +237,13 @@ exports.pointThPreUpdate = async (req, res, next) => {
         conn.release();
     }
 }
-// 포인트 구매요청 -- 사용자가 구매요청하고 관리자의 입금확인후 확정을 기다리는 것이다.
+
+/**
+ * 포인트 구매요청만! 구매확정된 상태는 아니다. -- 사용자가 구매요청하고 관리자의 입금확인후 확정을 기다리는 것이다.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 exports.buyUniPoint = async (req, res, next) => {
     const conn = await dbConn.getConnection();
     try {
@@ -297,7 +323,13 @@ exports.buyUniPoint = async (req, res, next) => {
         conn.release();
     }
 }
-// 유니포인트 판매 신청
+
+/**
+ * 유니포인트 판매 신청
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 exports.sellUniPoint = async (req, res, next) => {
     const conn = await dbConn.getConnection();
     try {
@@ -351,13 +383,18 @@ exports.sellUniPoint = async (req, res, next) => {
     }
 }
 
-// 포인트 요청 확정 - 관리자가 하는 부분
-// 가입할때 기본 계정 정보를 만든 다는 가정하에 합계 금액은 업데이트만 한다.
+/**
+ * 포인트 요청 확정 - 관리자가 하는 부분
+ * 주의! 가입처리시 기본 계좌 정보 생성후 그값만 업데이트 한다.
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 exports.uniPointConfirm = async (req, res, next) => {
     const conn = await dbConn.getConnection();
     try {
         await conn.beginTransaction();
-        let sql = '', user_no = 0, rows = [], type = 'Y';
+        let sql, user_no = 0, rows, type = 'Y';
         let userUniPoint = 0, userBtcPoint = 0.0, userMoney = 0;
         let salesUniPoint = 0, salesMoney = 0;
 
@@ -400,7 +437,6 @@ exports.uniPointConfirm = async (req, res, next) => {
         sql = dbQuery('account', 'selectUserSum', {user_no, type: 'Y'});
         rows = await conn.execute(sql);
         if (confirmType === 'Y') {
-
             userUniPoint = Number(rows[0][0].uni_point) + Number(salesUniPoint);
             userBtcPoint = rows[0][0].btc_point;
             userMoney = Number(rows[0][0].money) + Number(salesMoney);
@@ -442,7 +478,12 @@ exports.uniPointConfirm = async (req, res, next) => {
     }
 }
 
-// 포인트 환매요청
+/**
+ * 포인트 환매요청
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 exports.refundPoint = async (req, res, next) => {
     const conn = await dbConn.getConnection();
     try {
@@ -520,8 +561,12 @@ exports.refundPoint = async (req, res, next) => {
     }
 }
 
-
-// 구매 유니포인트 정보
+/**
+ * 구매 유니포인트 정보
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 exports.uniPointList = async (req, res, next) => {
     const conn = await dbConn.getConnection();
     try {
@@ -571,9 +616,9 @@ exports.uniPointList = async (req, res, next) => {
         rows = await conn.execute(sql);
         userPointList = rows[0];
         if (userPointList && userPointList.document_number) {
-            userPointList.document_number = await authUtil.getDecryptToken(userPointList.document_number, process.env.JWT_SECRET_OR_KEY)
+            userPointList.document_number = authUtil.getDecryptToken(await userPointList.document_number, process.env.JWT_SECRET_OR_KEY)
         }
-        if (userPointList.length > 0 && !!userPointList[0].document_number) userPointList[0].document_number = await authUtil.getDecryptToken(userPointList[0].document_number, process.env.JWT_SECRET_OR_KEY);
+        if (userPointList.length > 0 && !!userPointList[0].document_number) userPointList[0].document_number = authUtil.getDecryptToken(userPointList[0].document_number, process.env.JWT_SECRET_OR_KEY);
         res.send({userSumInfo, userPointList, sellRSumInfo, buyRSumInfo});
     } catch (e) {
         logger.error(`accountController.js - uniPointList - 에러 ${e}`);
@@ -582,99 +627,13 @@ exports.uniPointList = async (req, res, next) => {
         conn.release();
     }
 }
-///////////////////////// 하단 다시 작성해보자
 
-// !!!!!!!!!!관리자와 연계되므로 다시 검토후 수정해야함!!!!!!!!
-// 포인트 구매 확정 - 관리자에서 하는 부분
-// 동시에 여러건인 경우도 생각해봐야 한다. -- 설계중
-exports.buyUniPointConfirm = async (req, res, next) => {
-    const conn = await dbConn.getConnection();
-    try {
-        let sql, user_no, rows, btc_point = 0, money = 0, uni_point = 0;
-        const {body} = req;
-        let {
-            user_id,
-            type, // Y 승인됨 C 요청취소
-            no // 구매 히스토리 넘버
-        } = body;
-
-        await conn.beginTransaction();
-        // 필수 값 확인
-        // 구매 히스토리 확인
-        if (!no || no === 0) throw new Error("확인 요청 정보를 확인하세요");
-        if (!type) throw new Error("요청 정보를 확인하세요");
-        // 사용자 확인
-        sql = dbQuery('user', 'selectUserId', {user_id});
-        rows = await conn.execute(sql);
-        if (rows[0].length === 0) throw new Error("구매한 사용자 정보를 확인하세요");
-        user_no = rows[0][0].user_no;
-        // 구매요청 정보확인
-        sql = dbQuery('account', 'selectBuyPointHistory', {user_no, no, type: 'R', no});
-        rows = await conn.execute(sql);
-        if (rows[0].length === 0) throw new Error("유니포인트구매요청 정보를 확인하세요");
-        money = rows[0][0].money;
-        uni_point = rows[0][0].uni_point;
-
-        // 승인인경우
-        if (type === 'Y') {
-            sql = dbQuery('account', 'confirmBuyPointHistory', {no, type});
-            await conn.execute(sql);
-            // 승인되었으니 요청금액을 최종 합금액에 더해준다.
-            sql = dbQuery('account', 'selectUserSum', {user_no, type: 'Y'});
-            rows = await conn.execute(sql);
-            // 최종 합계 금액이 없는 경우 신규 생성
-            if (rows[0].length === 0) {
-                sql = dbQuery('account', 'insertUserSum', {user_no, type: 'Y', uni_point, money, btc_point});
-                await conn.execute(sql);
-            } else {
-                // 기존 확정금액에 요청금액을 더한다.
-                const update_uni_point = rows[0][0].uni_point + uni_point;
-                const update_money = rows[0][0].money + money;
-                const update_btc_point = rows[0][0].btc_point + btc_point;
-                sql = dbQuery('account', 'updateUserSum', {
-                    user_no,
-                    type,
-                    uni_point: update_uni_point,
-                    money: update_money,
-                    btc_point: update_btc_point
-                });
-                await conn.execute(sql);
-            }
-        }
-        // 취소이면 삭제의 개념으로 한다. -- 요건 확정이 아니라 단순 요청 취소 거래요청만하고 실제로 계좌로 입금을 한동안 안하는 등의 요청기록만 있는 거래 취소이다
-        // 최종 승인 기록과는 무관함
-        if (type === 'C') {
-            sql = dbQuery('account', 'deleteBuyPointHistory', {no});
-            await conn.execute(sql);
-            // 합계 요청금액을 삭감한다.
-
-        }
-        // 취소든 승인이든 요청 합계 금액은 삭감한다.// 판매요청하고는 다른것이다 헤갈리면 안됨!!!!!!
-        if (type === 'C' || type === 'Y') {
-            sql = dbQuery('account', 'selectUserSum', {user_no, type: 'R'});
-            rows = await conn.execute(sql);
-            if (rows[0].length === 0) throw new Error("유니포인트구매요청 정보가 부정확합니다.");
-            // 합계정보에서 요청금액을 빼준다.
-            btc_point = rows[0][0].btc_point - btc_point;
-            money = rows[0][0].money - money;
-            uni_point = rows[0][0].uni_point - uni_point;
-
-
-            sql = dbQuery('account', 'updateUserSum', {user_no, no, btc_point, money, uni_point, type: 'R'});
-            await conn.execute(sql);
-        }
-        await conn.commit();
-        //await conn.rollback();
-        res.send();
-    } catch (e) {
-        logger.error(`accountController.js - confirmUniPoint - 에러 ${e}`);
-        await conn.rollback();
-        next(e);
-    } finally {
-        conn.release();
-    }
-}
-//사용자의 누적수입
+/**
+ * 사용자의 누적수입
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 exports.getUserBtcSum = async (req, res, next) => {
     try {
         const {body} = req;
@@ -685,7 +644,13 @@ exports.getUserBtcSum = async (req, res, next) => {
         next(e);
     }
 }
-//사용자의 코인잔고
+
+/**
+ * 사용자의 코인잔고
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 exports.getUserBtcBalance = async (req, res, next) => {
     try {
         const {body} = req;
@@ -696,7 +661,13 @@ exports.getUserBtcBalance = async (req, res, next) => {
         next(e);
     }
 }
-//사용자의 코인입출금내역
+
+/**
+ * 사용자의 코인입출금내역
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 exports.getUserCoinList = async (req, res, next) => {
     try {
         const {body} = req;
@@ -708,7 +679,12 @@ exports.getUserCoinList = async (req, res, next) => {
     }
 }
 
-// 사용자별 누적코인수익
+/**
+ * 사용자별 누적코인수익
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 exports.getBenefit = async (req, res, next) => {
     try {
         const {body} = req;
@@ -719,7 +695,13 @@ exports.getBenefit = async (req, res, next) => {
         next(e);
     }
 }
-// 사용자별 누적유니포인트
+
+/**
+ * 사용자별 누적유니포인트
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 exports.getSumBuyMoney = async (req, res, next) => {
     try {
         const {body} = req;
@@ -731,7 +713,12 @@ exports.getSumBuyMoney = async (req, res, next) => {
     }
 }
 
-// 사용자의 포인트 판매요청
+/**
+ * 사용자의 포인트 판매요청
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 exports.sellBtcUser = async (req, res, next) => {
     logger.info(`사용자의 포인트 판매요청`);
     const conn = await dbConn.getConnection();
@@ -748,15 +735,14 @@ exports.sellBtcUser = async (req, res, next) => {
             accountHolder // 계좌주(이름)
         } = body;
 
-        let sql = '', rows = [], accountListNo = 0;
+        let sql, rows, accountListNo;
         // 0. 직접 합계 금액을 구하고 빼준다
         sql = dbQuery('account', 'getUserCoinList', {
             user_no,
-            start_num : 0,
+            start_num: 0,
             size: 1
         });
         rows = await conn.execute(sql);
-
 
         // 1. tb_user_account_list 사용자 매출에 환매요청 정보 입력
         sql = dbQuery('account', 'insertUserAccount', {
@@ -764,7 +750,7 @@ exports.sellBtcUser = async (req, res, next) => {
             user_no,
             type: 'S',
             coin_value: coinAmount,
-            sum_coin_value : rows[0][0].sum_coin_value - coinAmount ,
+            sum_coin_value: rows[0][0].sum_coin_value - coinAmount,
             register_no: user_no, // 사용자가 요청한것이니 사용자 번호가 들어가야 한다.
             coin_type: 'bit_coin', // 일단은 비트코인만 존재하는 것으로 생각한다.
 

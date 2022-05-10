@@ -25,6 +25,7 @@
                 #{charge_name},
                 #{memo})
     </insert>
+
     <!-- 구매처존재확인 -->
     <select id="selectPurchaseCount">
         select count(1) cnt
@@ -56,6 +57,7 @@
         '%Y-%m-%d') between #{start_date} and #{end_date}
         limit ${start_no} ,${size}
     </select>
+
     <!-- 채굴기정보 입력 -->
     <insert id="insertPurchaseMachine">
         insert into tb_purchase_machine
@@ -72,6 +74,7 @@
                 #{uni_point},
                 #{created_user_no})
     </insert>
+
     <!--현재 채굴기 유니포인트 재고 정보 확인 -->
     <select id="selectThPointStatusNow">
         select money,
@@ -354,7 +357,7 @@
         select bb.coin_value - aa.coin_value as coin_value
         from (select ifnull(sum(coin_value), 0.0) coin_value
               from tb_user_account_list
-              where type in ('O' , 'S' )
+              where type in ('O', 'S')
                 and coin_type = 'bit_coin'
                 and user_no = #{user_no}) aa,
              (select ifnull(sum(coin_value), 0.0) coin_value

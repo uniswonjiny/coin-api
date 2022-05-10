@@ -4,7 +4,7 @@
  */
 
 /**
- * timestatmp 형식의 날짜구하기
+ * timestamp 형식의 날짜구하기
  * @param { Date }  date 변경하려는 날짜
  * @returns { String } 변경된 형식의 날짜
  */
@@ -28,7 +28,7 @@ const getTimeStamp = (date) => {
 }
 
 /**
- * 날자형식 구하기
+ * 일반적인 형태 날자형식 구하기
  * @param { Date }  date 변경하려는 날짜
  * @param { String }  divider 구분자
  * @returns { String } 변경된 형식의 날짜

@@ -8,8 +8,13 @@ const {dbQuery} = require("../config/dbModule");
 const env = process.env.NODE_ENV || 'development';
 const dbConn = require('../config/dbInfo')[env];
 const authUtil = require('../utils/authUtil');
-const {json} = require("express");
-// 로그인
+
+/**
+ * 로그인
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 exports.loginInfo = async (req, res, next) => {
     const conn = await dbConn.getConnection();
     try {
@@ -52,13 +57,19 @@ exports.loginInfo = async (req, res, next) => {
         conn.release();
     }
 }
-// 인증키만으로 로그인하기
+
+/**
+ * 인증키만으로 로그인하기
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 exports.authInfo = async (req, res, next) => {
     const conn = await dbConn.getConnection();
     try {
         // 사용자 정보 아이디로 추출
-        const { authorization } = req.headers;
-        const user_id = await authUtil.getDecryptToken(authorization ,process.env.JWT_SECRET_OR_KEY)
+        const {authorization} = req.headers;
+        const user_id = await authUtil.getDecryptToken(authorization, process.env.JWT_SECRET_OR_KEY)
         const sql = dbQuery('user', 'selectUserInfo', {user_id});
         let [rows] = await conn.query(sql);
 
@@ -91,7 +102,13 @@ exports.authInfo = async (req, res, next) => {
         conn.release();
     }
 }
-// 인증키만
+
+/**
+ * 인증키 얻어오기
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
+ */
 exports.getAuthKey = async (req, res, next) => {
     const conn = await dbConn.getConnection();
     try {
@@ -121,11 +138,10 @@ exports.getAuthKey = async (req, res, next) => {
 
 /**
  * 사용자 존재 확인 -존재하면 1 없다면 0
- * @param { request } req
- * @param { response } res
- * @param { function } next
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
  */
-exports.countUserId = async (req, res, next) => {
+exports.countUserId = async (req, res) => {
     const conn = await dbConn.getConnection(async connection => connection);
     try {
         logger.info('사용자 존재 확인');
@@ -136,16 +152,15 @@ exports.countUserId = async (req, res, next) => {
         logger.error(`authController.js - countUserId - 에러 ${e}`);
         throw new Error("사용자 확인이 안됩니다.");
     } finally {
-        logger.info('마지막 실행되냐')
         conn.release();
     }
 }
 
 /**
  * 사용자 기본정보 확인
- * @param { request } req
- * @param { response } res
- * @param { function } next
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
  */
 exports.userIdUserName = async (req, res, next) => {
     logger.info('사용자 기본정보 확인');
@@ -158,16 +173,15 @@ exports.userIdUserName = async (req, res, next) => {
         logger.error(`authController.js - userIdUserName - 에러 ${e}`)
         next(e);
     } finally {
-
         conn.release();
     }
 }
 
 /**
  * 신규 사용자 저장
- * @param { request } req
- * @param { response } res
- * @param { function } next
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
  */
 exports.userInsert = async (req, res, next) => {
     logger.info('사용자 정보 저장')
@@ -207,7 +221,7 @@ exports.userInsert = async (req, res, next) => {
             user_id, user_password, user_status
         });
         await conn.execute(sql);
-        // 3. 사용자 번호 획득 - 내부 정보 조회시는 사용자 번호로 한다. 
+        // 3. 사용자 번호 획득 - 내부 정보 조회시는 사용자 번호로 한다.
         sql = dbQuery('user', 'selectUserId', {user_id});
         rows = await conn.execute(sql);
         user_no = rows[0][0].user_no;
@@ -248,7 +262,7 @@ exports.userInsert = async (req, res, next) => {
         });
         await conn.execute(sql);
 
-        // 6-2 tb_user_sum 이 테이블은 계속 확인 
+        // 6-2 tb_user_sum 이 테이블은 계속 확인
         // 실제금액 , 판매요청금액, 구매요청금액
         sql = dbQuery('account', 'insertUserSum', {
             user_no, uni_point: 0, btc_point: 0, money: 0, type: 'R'
@@ -264,7 +278,7 @@ exports.userInsert = async (req, res, next) => {
         await conn.execute(sql);
 
         await conn.commit();
-        await res.send();
+        res.send();
     } catch (e) {
         await conn.rollback();
         logger.error(`authController.js - userInsert - 에러 ${e}`);
@@ -275,9 +289,9 @@ exports.userInsert = async (req, res, next) => {
 }
 /**
  * 비밀번호 변경
- * @param { request } req
- * @param { response } res
- * @param { function } next
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
  */
 exports.updatePassword = async (req, res, next) => {
     logger.info('비밀번호 변경');
@@ -313,9 +327,9 @@ exports.updatePassword = async (req, res, next) => {
 
 /**
  * 계좌정보 수정
- * @param { request } req
- * @param { response } res
- * @param { function } next
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
  */
 exports.userBankModify = async (req, res, next) => {
     logger.info('사용자의 은행계좌 정보 변경')
@@ -357,9 +371,9 @@ exports.userBankModify = async (req, res, next) => {
 
 /**
  * 공지사항 확인
- * @param { request } req
- * @param { response } res
- * @param { function } next
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
  */
 exports.userMessageList = async (req, res, next) => {
     logger.info('사용자별 공지사항 목록 확인')
@@ -383,9 +397,9 @@ exports.userMessageList = async (req, res, next) => {
 
 /**
  * 공지목록 확인 정보 저장
- * @param { request } req
- * @param { response } res
- * @param { function } next
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ * @param {Function} next - Express next middleware function
  */
 exports.userMessageSawInsert = async (req, res, next) => {
     logger.info('사용자별 공지사항 확인 정보 입력')
@@ -397,7 +411,7 @@ exports.userMessageSawInsert = async (req, res, next) => {
         } = body;
         let sql = dbQuery('user', 'selectMessageUserReadList', {user_no, message_no});
         let rows = await conn.execute(sql);
-        if(rows[0][0].count < 1){
+        if (rows[0][0].count < 1) {
             sql = dbQuery('user', 'insertMessageReadList', {user_no, message_no});
             await conn.execute(sql);
         }

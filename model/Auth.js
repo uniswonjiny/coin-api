@@ -9,7 +9,7 @@ const {dbQuery} = require("../config/dbModule");
 /**
  * 사용자의 추천인 정보(목록)을 확인한다.
  * @param { Number<int> } userNo 사용자번호 널일수도 있다.
- * @param { Promise<connection> } conn 디비접속 커넥션
+ * @param { Object } conn mysql2 pool promise 디비접속 커넥션
  * @returns { Array<int , int>} 사용자번호 - 해당 추천인 번호
  * */
 
@@ -26,7 +26,7 @@ const userRecommendInfo = async (userNo , conn) => {
 /**
  * 사용자의 추천인 정보(목록)을 확인한다.
  * @param { String } user_id 사용자번호 널일수도 있다.
- * @param { Promise<connection> } conn 디비접속 커넥션
+ * @param { Object } conn mysql2 pool promise 디비접속 커넥션
  * @returns { Number<int>} 사용자번호
  * */
 const getUserNo = async(user_id, conn) =>{

@@ -9,7 +9,7 @@ const env = process.env.NODE_ENV || 'development';
 /**
  * 고객들 유니포인트 구매정보 확인
  * @param { String } day 유니포인트 구매확정전
- * @param { Promise<connection> } conn  디비접속 커넥션
+ * @param { Object } conn mysql2 pool promise 디비접속 커넥션
  * @returns { Object<Array, int> } - 포인트 합과 사용자 포인트 리스트
  */
 const uniPointList = async (day, conn) => {

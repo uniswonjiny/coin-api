@@ -13,8 +13,8 @@ const dbConn = require('../config/dbInfo')[env];
  * 코인정보 - 분배용코인 수수료용코인 정보 -- 분배 코인항목이
  * @param { String } batch_day 배치날짜 코인수익금 입금날짜
  * @param { String } coin_type 코인타입
- * @param { int } confirm_yn 코인배분상태 1배분 0미배분
- * @param { Promise<connection> } conn 디비접속 커넥션
+ * @param { Number } confirm_yn 코인배분상태 1배분 0미배분
+ * @param { Object } conn mysql2 pool promise 디비접속 커넥션
  * @returns { Object<float, float> } - coinSum 코인배분전체함 , coinFee - 코인수수료 전체합
  */
 const confirmCoin = async (batch_day, coin_type, confirm_yn, conn) => {
@@ -45,7 +45,7 @@ const confirmCoin = async (batch_day, coin_type, confirm_yn, conn) => {
 /**
  * 코인정보 - 분배용코인 수수료용코인 정보 입력
  * @param { Array } list 분배받을 사용자목록 -- 참고로 사용자가 수천명단위로 생기지 않을 것을 예상하고 반복문 처리한다. 만약 배치가 느리다면 대량입력형식으로 바꿔라!
- * @param { Promise<connection> }  conn 디비접속 커넥션
+ * @param { Object } conn mysql2 pool promise 디비접속 커넥션
  * @returns { Object<coinSum, coinFee> } - coinSum 코인배분전체함 , coinFee - 코인수수료 전체합
  */
 const insertUserCoin = (list, conn) => {
@@ -111,7 +111,7 @@ const insertCoinSum = (list, conn) => {
 
 /**
  * 업비트 비트코인실시간 시세정보 확인및 검색당시 시세 디비에 저장
- * @param { Promise<connection> } conn 디비접속 커넥션
+ * @param { Object } conn mysql2 pool promise 디비접속 커넥션
  * @param { Boolean } insertFlag 디비접속 커넥션
  * @returns { Object } - 코인정보
  */
@@ -216,7 +216,7 @@ const dividendCoinCalc = async (mining_day) => {
             const de_coin = Math.floor((el.amount / el.de_day / coinInfo.trade_price) * 100000000) / 100000000; // amount 는 th금액 * 운영 th 수이다
             // 배당코인
             const fit_coin = Number(el.coin_value) - Number(de_coin);
-            // 감가상각 배당대상코인 정보 추가 
+            // 감가상각 배당대상코인 정보 추가
             sql = dbQuery('batch', 'updateSourceIncomeCoinDeFitCoin', {
                 de_coin, fit_coin, mining_day, company_code: el.company_code,
                 coin_currency: coinInfo.trade_price, coin_currency_time: coinInfo.candle_date_time_kst.replace('T', ' ')

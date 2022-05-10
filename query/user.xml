@@ -191,5 +191,4 @@
         where message_no = ${message_no} and user_no= ${user_no}
     </select>
 
-
 </mapper>
